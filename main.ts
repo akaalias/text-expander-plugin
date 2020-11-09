@@ -1,83 +1,86 @@
-import { App, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { App, Modal, Notice, Plugin, MetadataCache } from 'obsidian';
 
 export default class MyPlugin extends Plugin {
+
+  	private cmEditors: CodeMirror.Editor[];
+	private statusBar: HTMLElement;
+	private listening: boolean;
+	private patterns: Map<string, string>;
+
 	onload() {
-		console.log('loading plugin');
 
-		this.addRibbonIcon('dice', 'Sample Plugin', () => {
-			new Notice('This is a notice!');
-		});
+		this.patterns = new Map<string, string>();
 
-		this.addStatusBarItem().setText('Status Bar Text');
+		this.patterns.set("::foo", "REPLACEMENT");
+		this.patterns.set("::date", "");
 
-		this.addCommand({
-			id: 'open-sample-modal',
-			name: 'Open Sample Modal',
-			// callback: () => {
-			// 	console.log('Simple Callback');
-			// },
-			checkCallback: (checking: boolean) => {
-				let leaf = this.app.workspace.activeLeaf;
-				if (leaf) {
-					if (!checking) {
-						new SampleModal(this.app).open();
-					}
-					return true;
-				}
-				return false;
-			}
-		});
+		this.statusBar = this.addStatusBarItem()
 
-		this.addSettingTab(new SampleSettingTab(this.app, this));
-
-		this.registerEvent(this.app.on('codemirror', (cm: CodeMirror.Editor) => {
-			console.log('codemirror', cm);
-		}));
-
-		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-			console.log('click', evt);
-		});
-
-		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
+		this.cmEditors = [];
+		this.registerEvent(
+		  this.app.on('codemirror', (cm: CodeMirror.Editor) => {
+			this.cmEditors.push(cm);
+			cm.on('keydown', this.handleKeyDown);
+		  }),
+		);		
 	}
 
 	onunload() {
 		console.log('unloading plugin');
-	}
-}
 
-class SampleModal extends Modal {
-	constructor(app: App) {
-		super(app);
+		this.cmEditors.forEach((cm) => {
+			cm.off('keydown', this.handleKeyDown);
+		  });
 	}
 
-	onOpen() {
-		let {contentEl} = this;
-		contentEl.setText('Woah!');
-	}
+	private readonly handleKeyDown = (
+		cm: CodeMirror.Editor,
+		event: KeyboardEvent,
+	  ): void => {
 
-	onClose() {
-		let {contentEl} = this;
-		contentEl.empty();
-	}
-}
+		if(!this.listening) {
+			if (event.key == ':') {					
+				//see if this is the second :
+				let cursor = cm.getCursor();
+				let line = cursor.line;
+				let lineString = cm.getLine(line);
+				let previousPosition = {ch: cursor.ch - 1, line: cursor.line, sticky: 'yes'}
+				let range = cm.getRange(previousPosition, cursor);
 
-class SampleSettingTab extends PluginSettingTab {
-	display(): void {
-		let {containerEl} = this;
+				console.log(range.charAt(0));
 
-		containerEl.empty();
+				if([':'].contains(range.charAt(0))) { 
+					this.listening = true
+					this.statusBar.setText("I'm listening...");
+				}
+			}
+		} else if (event.key == 'Enter') {
 
-		containerEl.createEl('h2', {text: 'Settings for my awesome plugin.'});
+			let cursor = cm.getCursor();
+			let line = cursor.line;
+			let lineString = cm.getLine(line);
 
-		new Setting(containerEl)
-			.setName('Setting #1')
-			.setDesc('It\'s a secret')
-			.addText(text => text.setPlaceholder('Enter your secret')
-				.setValue('')
-				.onChange((value) => {
-					console.log('Secret: ' + value);
-				}));
+			this.patterns.forEach((value: string, key: string) => {
 
+				// handle dynamic values
+				if(key == "::date") {
+					value = new Date().toDateString();
+				}
+
+				const pattern = key;
+				const regex = RegExp(pattern);
+	
+				if(regex.test(lineString)) {
+	
+					let patternMatchIndex = lineString.match(pattern).index
+					let patternLength = pattern.length
+					
+					cm.replaceRange(value, {ch: patternMatchIndex, line: line}, {ch: patternMatchIndex + patternLength, line: line});
+				}			
+		});
+
+		this.listening = false
+		this.statusBar.setText("");		
+	  }
 	}
 }
