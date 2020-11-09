@@ -89,8 +89,6 @@ export default class ExpanderPlugin extends Plugin {
 			}
 
 			patterns.forEach((value: string, key: string) => {
-				console.log("checking for..." + key);
-
 				const pattern = key;
 				const regex = RegExp(pattern);
 	
@@ -99,12 +97,14 @@ export default class ExpanderPlugin extends Plugin {
 					let patternLength = pattern.length
 					
 					cm.replaceRange(value, {ch: patternMatchIndex, line: line}, {ch: patternMatchIndex + patternLength, line: line});
-			}
-		});
+				}
+			});
 
 		this.listening = false
-		this.statusBar.setText("");	
-	  }
+		this.statusBar.setText("");
+	  } else if (event.key == 'Escape') {
+		this.listening = false
+		this.statusBar.setText("");
 	}
 }
 
