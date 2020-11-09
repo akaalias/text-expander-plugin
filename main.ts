@@ -1,6 +1,8 @@
-import { App, Modal, Notice, Plugin, MetadataCache } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Setting } from 'obsidian';
 
-export default class MyPlugin extends Plugin {
+export default class ExpanderPlugin extends Plugin {
+	
+	public settings: ExpanderPluginSettings;
 
   	private cmEditors: CodeMirror.Editor[];
 	private statusBar: HTMLElement;
@@ -9,10 +11,8 @@ export default class MyPlugin extends Plugin {
 
 	onload() {
 
-		this.patterns = new Map<string, string>();
-
-		this.patterns.set("::foo", "REPLACEMENT");
-		this.patterns.set("::date", "");
+		this.loadSettings();
+		this.addSettingTab(new ExpanderSettingTab(this.app, this));
 
 		this.statusBar = this.addStatusBarItem()
 
@@ -22,7 +22,7 @@ export default class MyPlugin extends Plugin {
 			this.cmEditors.push(cm);
 			cm.on('keydown', this.handleKeyDown);
 		  }),
-		);		
+		);
 	}
 
 	onunload() {
@@ -32,6 +32,21 @@ export default class MyPlugin extends Plugin {
 			cm.off('keydown', this.handleKeyDown);
 		  });
 	}
+
+	private async loadSettings(): Promise<void> {
+		this.settings = new ExpanderPluginSettings();
+		(async () => {
+		  const loadedSettings = await this.loadData();
+		  if (loadedSettings) {
+			console.log('Found existing settings file');
+			this.settings.triggerOneKeyword = loadedSettings.triggerOneKeyword;
+			this.settings.triggerOneValue = loadedSettings.triggerOneValue;
+		  } else {
+			console.log('No settings file found, saving...');
+			this.saveData(this.settings);
+		  }
+		})();
+	  }
 
 	private readonly handleKeyDown = (
 		cm: CodeMirror.Editor,
@@ -60,23 +75,32 @@ export default class MyPlugin extends Plugin {
 			let line = cursor.line;
 			let lineString = cm.getLine(line);
 
-			this.patterns.forEach((value: string, key: string) => {
+			let patterns = new Map<string, string>();
 
-				// handle dynamic values
-				if(key == "::date") {
-					value = new Date().toDateString();
-				}
+			// default triggers
+			patterns.set("::date", new Date().toDateString());
+	
+			//custom triggers
+			console.log("adding custom keywords");
+	
+			if(this.settings.triggerOneKeyword) {
+				patterns.set("::" + this.settings.triggerOneKeyword, this.settings.triggerOneValue);
+			}
 
+			if(this.settings.triggerTwoKeyword) {
+				patterns.set("::" + this.settings.triggerTwoKeyword, this.settings.triggerTwoValue);
+			}
+
+			patterns.forEach((value: string, key: string) => {
 				const pattern = key;
 				const regex = RegExp(pattern);
 	
 				if(regex.test(lineString)) {
-	
 					let patternMatchIndex = lineString.match(pattern).index
 					let patternLength = pattern.length
 					
 					cm.replaceRange(value, {ch: patternMatchIndex, line: line}, {ch: patternMatchIndex + patternLength, line: line});
-				}			
+				}
 		});
 
 		this.listening = false
@@ -84,3 +108,49 @@ export default class MyPlugin extends Plugin {
 	  }
 	}
 }
+
+class ExpanderPluginSettings {
+	public triggerOneKeyword: string;
+	public triggerOneValue: string;
+	public triggerTwoKeyword: string;
+	public triggerTwoValue: string;
+}
+
+class ExpanderSettingTab extends PluginSettingTab {
+
+	private readonly plugin: ExpanderPlugin;
+
+	constructor(app: App, plugin: ExpanderPlugin) {
+		super(app, plugin);
+		this.plugin = plugin;
+	  }
+
+	  display(): void {
+		let {containerEl} = this;
+
+		containerEl.empty();
+
+		containerEl.createEl('h2', { text: 'Expander Plugin - Custom Keywords' });
+		
+		new Setting(containerEl)
+			.setName('Trigger #1 Keyword')
+			.setDesc('foo -> ::foo')
+			.addText(text => text.setPlaceholder('foo')
+				.setValue(this.plugin.settings.triggerOneKeyword)
+				.onChange((value) => {
+					this.plugin.settings.triggerOneKeyword = value
+				  	this.plugin.saveData(this.plugin.settings);
+		}));
+
+		new Setting(containerEl)
+		.setName('Trigger #1 Replacement')
+		.setDesc('What trigger keyword #1 should expand to')
+		.addTextArea(text => text.setPlaceholder('')
+			.setValue(this.plugin.settings.triggerOneValue)
+			.onChange((value) => {
+				this.plugin.settings.triggerOneValue = value
+				this.plugin.saveData(this.plugin.settings);
+		}));
+	}
+}
+
