@@ -4,7 +4,7 @@ A bare-bones proof-of-concept implementation of a simple text-expander in Obsidi
 
 1. Uses `::` to start the trigger-sequence
 2. Define your own custom trigger keyword like `foo`
-3. In the editor, type `::foo` and hit <enter> to expand
+3. In the editor, type `::foo` and hit ENTER to expand
 
 Built-in is `::date` which will expand to todays date such as `Mon Nov 09 2020`
 
