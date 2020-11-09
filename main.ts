@@ -7,7 +7,6 @@ export default class ExpanderPlugin extends Plugin {
   	private cmEditors: CodeMirror.Editor[];
 	private statusBar: HTMLElement;
 	private listening: boolean;
-	private patterns: Map<string, string>;
 
 	onload() {
 
@@ -41,6 +40,9 @@ export default class ExpanderPlugin extends Plugin {
 			console.log('Found existing settings file');
 			this.settings.triggerOneKeyword = loadedSettings.triggerOneKeyword;
 			this.settings.triggerOneValue = loadedSettings.triggerOneValue;
+
+			this.settings.triggerTwoKeyword = loadedSettings.triggerTwoKeyword;
+			this.settings.triggerTwoValue = loadedSettings.triggerTwoValue;
 		  } else {
 			console.log('No settings file found, saving...');
 			this.saveData(this.settings);
@@ -58,11 +60,8 @@ export default class ExpanderPlugin extends Plugin {
 				//see if this is the second :
 				let cursor = cm.getCursor();
 				let line = cursor.line;
-				let lineString = cm.getLine(line);
 				let previousPosition = {ch: cursor.ch - 1, line: cursor.line, sticky: 'yes'}
 				let range = cm.getRange(previousPosition, cursor);
-
-				console.log(range.charAt(0));
 
 				if([':'].contains(range.charAt(0))) { 
 					this.listening = true
@@ -81,8 +80,6 @@ export default class ExpanderPlugin extends Plugin {
 			patterns.set("::date", new Date().toDateString());
 	
 			//custom triggers
-			console.log("adding custom keywords");
-	
 			if(this.settings.triggerOneKeyword) {
 				patterns.set("::" + this.settings.triggerOneKeyword, this.settings.triggerOneValue);
 			}
@@ -92,6 +89,8 @@ export default class ExpanderPlugin extends Plugin {
 			}
 
 			patterns.forEach((value: string, key: string) => {
+				console.log("checking for..." + key);
+
 				const pattern = key;
 				const regex = RegExp(pattern);
 	
@@ -100,11 +99,11 @@ export default class ExpanderPlugin extends Plugin {
 					let patternLength = pattern.length
 					
 					cm.replaceRange(value, {ch: patternMatchIndex, line: line}, {ch: patternMatchIndex + patternLength, line: line});
-				}
+			}
 		});
 
 		this.listening = false
-		this.statusBar.setText("");		
+		this.statusBar.setText("");	
 	  }
 	}
 }
@@ -130,12 +129,12 @@ class ExpanderSettingTab extends PluginSettingTab {
 
 		containerEl.empty();
 
-		containerEl.createEl('h2', { text: 'Expander Plugin - Custom Keywords' });
-		
+		containerEl.createEl('h2', { text: 'Expander Plugin - Custom Keywords' });		
+
 		new Setting(containerEl)
 			.setName('Trigger #1 Keyword')
-			.setDesc('foo -> ::foo')
-			.addText(text => text.setPlaceholder('foo')
+			.setDesc('To fire this, use ::foo<Enter> while writing')
+			.addText(text => text.setPlaceholder('foo (no colons needed)')
 				.setValue(this.plugin.settings.triggerOneKeyword)
 				.onChange((value) => {
 					this.plugin.settings.triggerOneKeyword = value
@@ -151,6 +150,27 @@ class ExpanderSettingTab extends PluginSettingTab {
 				this.plugin.settings.triggerOneValue = value
 				this.plugin.saveData(this.plugin.settings);
 		}));
+
+		//custom trigger #2
+		new Setting(containerEl)
+		.setName('Trigger #2 Keyword')
+		.setDesc('To fire this, use ::bar<Enter> while writing')
+		.addText(text => text.setPlaceholder('bar (no colons needed)')
+			.setValue(this.plugin.settings.triggerTwoKeyword)
+			.onChange((value) => {
+				this.plugin.settings.triggerTwoKeyword = value
+				this.plugin.saveData(this.plugin.settings);
+		}));
+
+		new Setting(containerEl)
+		.setName('Trigger #2 Replacement')
+		.setDesc('What trigger keyword #2 should expand to')
+		.addTextArea(text => text.setPlaceholder('')
+			.setValue(this.plugin.settings.triggerTwoValue)
+			.onChange((value) => {
+				this.plugin.settings.triggerTwoValue = value
+				this.plugin.saveData(this.plugin.settings);
+		}));	
 	}
 }
 
