@@ -12,11 +12,11 @@ export default class ExpanderPluginSettings {
   public triggerThreeValue: string;
 
   constructor() {
-    this.triggerOneValue = '';
-    this.triggerOneKeyword = '';
-    this.triggerTwoKeyword = '';
-    this.triggerTwoValue = '';
-    this.triggerThreeKeyword = '';
-    this.triggerThreeValue = '';
+    this.triggerOneValue = "";
+    this.triggerOneKeyword = "";
+    this.triggerTwoKeyword = "";
+    this.triggerTwoValue = "";
+    this.triggerThreeKeyword = "";
+    this.triggerThreeValue = "";
   }
 }
