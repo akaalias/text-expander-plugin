@@ -68,7 +68,7 @@ export default class ExpanderPlugin extends Plugin {
 					this.statusBar.setText("I'm listening...");
 				}
 			}
-		} else if (event.key == 'Enter') {
+		} else if (event.key == 'Enter' || event.key == 'Tab' || event.key == ' ') {
 
 			let cursor = cm.getCursor();
 			let line = cursor.line;
@@ -102,8 +102,9 @@ export default class ExpanderPlugin extends Plugin {
 
 		this.listening = false
 		this.statusBar.setText("");
+
 	  } else if (event.key == 'Escape') {
-		this.listening = false
+		this.listening = false;
 		this.statusBar.setText("");
 	}
 }
@@ -113,6 +114,9 @@ class ExpanderPluginSettings {
 	public triggerOneValue: string;
 	public triggerTwoKeyword: string;
 	public triggerTwoValue: string;
+	
+	constructor() {
+	}
 }
 
 class ExpanderSettingTab extends PluginSettingTab {
