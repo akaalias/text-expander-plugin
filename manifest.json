@@ -1,7 +1,7 @@
 {
   "id": "obsidian-text-expander-plugin",
   "name": "Text Expander",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A bare-bones and opinionated proof-of-concept text expander utility for Obsidian",
   "author": "Alexis Rondeau",
   "authorUrl": "https://publish.obsidian.md/alexisrondeau",

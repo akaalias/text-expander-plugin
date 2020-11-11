@@ -2,11 +2,11 @@
 
 A bare-bones proof-of-concept implementation of a simple text-expander in Obsidian.
 
-1. Uses `::` to start the trigger-sequence
+1. Uses `::` (two colons) to start the trigger-sequence
 2. Define your own custom trigger keyword like `foo`
-3. In the editor, type `::foo` and hit ENTER to expand
+3. In the editor, type <kbd>::foo</kbd> + <kbd>ENTER</kbd> (or <kbd>Tab</kbd> or <kbd>Space</kbd>) to expand
 
-Built-in is `::date` which will expand to todays date such as `Mon Nov 09 2020` and `::time` which will expand to your current timezone's time.
+Built-in is <kbd>::date</kbd> which will expand to todays date such as `Mon Nov 09 2020` and <kbd>::time</kbd> which will expand to your current timezone's time.
 
 ## Demo
 
